@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dynamic Event Dictionary</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+    <!-- Sticky Navigation Bar (stays at the top until the end of the page) -->
+    <div class="header-sticky">
+        <div class="header-content">
+            <div class="logo-area">
+                <div class="logo-title-row">
+                    <span class="ke-logo-badge" aria-label="KE Logo">KE</span>
+                    <h1>KhanEvent</h1>
+                </div>
+                <p>Discover and filter upcoming exciting events</p>
+            </div>
+            <nav class="main-nav">
+                <a href="#explore" id="navExplore" class="nav-link active-nav">Explore</a>
+                <a href="#eventGrid" id="navEvents" class="nav-link">Events</a>
+                <a href="#bookingsSection" id="navBookings" class="nav-link">Manage Bookings</a>
+                <a href="#dashboard" id="navDashboard" class="nav-link">My Dashboard</a>
+                <a href="#about" class="nav-link">About</a>
+            </nav>
+            <div class="auth-buttons">
+                <button id="openLoginBtn" class="btn-outline">Login</button>
+                <button id="openSignupBtn" class="btn-solid">Sign Up</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header Section (Banner Only) -->
+    <header class="header">
+        <!-- Banner Image Slot -->
+        <div class="custom-image-slot-wrapper">
+            <img id="customBlankImage" src="images/ban.png" alt="KhanEvent Banner Image" class="custom-blank-img" onerror="handleImageFallback(this)">
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="container">
+
+        <!-- =========================================================
+             EXPLORE & EVENTS VIEW (Default View)
+             ========================================================= -->
+        <div id="exploreView">
+            <!-- Controls Section: Search Bar + Filters + Sorting -->
+            <section class="controls">
+                <div class="search-group">
+                    <input type="text" id="searchInput" placeholder="Search events by name or location..." autocomplete="off">
+                </div>
+
+                <div class="filter-sort-wrapper">
+                    <div class="filter-group">
+                        <label for="categoryFilter">Category:</label>
+                        <select id="categoryFilter">
+                            <option value="All">All Categories</option>
+                            <option value="Music">Music</option>
+                            <option value="Technology">Technology</option>
+                            <option value="Workshop">Workshop</option>
+                            <option value="Sports">Sports</option>
+                        </select>
+                    </div>
+
+                    <div class="sort-group">
+                        <label for="sortPrice">Sort by Price:</label>
+                        <select id="sortPrice">
+                            <option value="default">Default</option>
+                            <option value="low-high">Low to High</option>
+                            <option value="high-low">High to Low</option>
+                        </select>
+                    </div>
+
+                    <button id="clearFiltersBtn" class="btn-secondary">Clear Filters</button>
+                </div>
+            </section>
+
+            <!-- Event Counter -->
+            <div class="counter-display">
+                <p>Showing <span id="eventCount">0</span> events</p>
+            </div>
+
+            <!-- Event Grid Container -->
+            <div id="eventGrid" class="event-grid"></div>
+
+            <!-- Task 1: Manage Event Bookings Section (Table, Edit, Cancel, Delete, Status, Totals) -->
+            <section id="bookingsSection" class="task4-section" aria-labelledby="manageBookingsHeading">
+                <div class="section-header">
+                    <h2 id="manageBookingsHeading">🎟️ Manage Event Bookings <span id="manageBookingsCount" class="section-badge">0</span></h2>
+                    <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button id="goToDashboardBtn" type="button" class="btn-primary">Open My Dashboard →</button>
+                        <button id="clearAllBookingsBtn" type="button" class="btn-clear-small" style="display: none;">Delete All Bookings</button>
+                    </div>
+                </div>
+
+                <!-- Summary Bar: Total Bookings, Confirmed, Cancelled, Total Booking Amount -->
+                <div class="booking-stats-bar">
+                    <div class="booking-stat-pill">
+                        <span class="stat-label">Total Bookings</span>
+                        <span id="statTotalBookings" class="stat-value">0</span>
+                    </div>
+                    <div class="booking-stat-pill confirmed">
+                        <span class="stat-label">Confirmed Bookings</span>
+                        <span id="statConfirmedBookings" class="stat-value">0</span>
+                    </div>
+                    <div class="booking-stat-pill cancelled">
+                        <span class="stat-label">Cancelled Bookings</span>
+                        <span id="statCancelledBookings" class="stat-value">0</span>
+                    </div>
+                    <div class="booking-stat-pill amount">
+                        <span class="stat-label">Total Booking Amount</span>
+                        <span id="statTotalBookingAmount" class="stat-value">₹0</span>
+                    </div>
+                </div>
+
+                <!-- Responsive Bookings Table -->
+                <div class="bookings-table-wrapper">
+                    <table class="bookings-table">
+                        <thead>
+                            <tr>
+                                <th>Booking ID</th>
+                                <th>Event Details</th>
+                                <th>Attendee</th>
+                                <th>Tickets</th>
+                                <th>Total Amount</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="bookingsTableBody"></tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- My Favorites Section -->
+            <section class="task4-section" aria-labelledby="favoritesHeading">
+                <div class="section-header">
+                    <h2 id="favoritesHeading">❤️ My Favorites <span id="favoritesCount" class="section-badge">0</span></h2>
+                    <button id="clearFavoritesBtn" class="btn-clear-small" style="display: none;">Clear Favorites</button>
+                </div>
+                <div id="favoritesGrid" class="event-grid"></div>
+            </section>
+
+            <!-- Recently Viewed Events Section -->
+            <section class="task4-section" aria-labelledby="recentHeading">
+                <div class="section-header">
+                    <h2 id="recentHeading">🕒 Recently Viewed Events <span id="recentCount" class="section-badge">0</span></h2>
+                    <button id="clearRecentBtn" class="btn-clear-small" style="display: none;">Clear History</button>
+                </div>
+                <div id="recentGrid" class="event-grid"></div>
+            </section>
+        </div>
+
+        <!-- =========================================================
+             TASK 2: MY DASHBOARD VIEW
+             ========================================================= -->
+        <section id="dashboardView" class="dashboard-view" aria-labelledby="dashboardHeading">
+            <div class="dashboard-header-card">
+                <div>
+                    <h2 id="dashboardHeading">📊 My Dashboard</h2>
+                    <p id="dashboardWelcomeSubtitle">Overview of your bookings, upcoming events, spending, and recently viewed activity.</p>
+                </div>
+                <div style="display: flex; gap: 0.65rem; flex-wrap: wrap;">
+                    <button type="button" id="backToExploreBtn" class="btn-solid">← Back to Explore</button>
+                </div>
+            </div>
+
+            <!-- Dashboard Summary Metric Cards -->
+            <div class="dashboard-metrics-grid">
+                <div class="dash-metric-card">
+                    <div class="dash-metric-top">
+                        <span class="dash-metric-title">Total Bookings</span>
+                        <span class="dash-metric-icon">🎟️</span>
+                    </div>
+                    <div id="dashTotalBookings" class="dash-metric-number">0</div>
+                    <div class="dash-metric-sub">All recorded event reservations</div>
+                </div>
+
+                <div class="dash-metric-card upcoming">
+                    <div class="dash-metric-top">
+                        <span class="dash-metric-title">Upcoming Events</span>
+                        <span class="dash-metric-icon">📅</span>
+                    </div>
+                    <div id="dashUpcomingEvents" class="dash-metric-number">0</div>
+                    <div class="dash-metric-sub">Confirmed upcoming event bookings</div>
+                </div>
+
+                <div class="dash-metric-card cancelled">
+                    <div class="dash-metric-top">
+                        <span class="dash-metric-title">Cancelled Bookings</span>
+                        <span class="dash-metric-icon">🚫</span>
+                    </div>
+                    <div id="dashCancelledBookings" class="dash-metric-number">0</div>
+                    <div class="dash-metric-sub">Cancelled event reservations</div>
+                </div>
+
+                <div class="dash-metric-card spent">
+                    <div class="dash-metric-top">
+                        <span class="dash-metric-title">Total Amount Spent</span>
+                        <span class="dash-metric-icon">💳</span>
+                    </div>
+                    <div id="dashTotalSpent" class="dash-metric-number">₹0</div>
+                    <div class="dash-metric-sub">Total across confirmed bookings</div>
+                </div>
+            </div>
+
+            <!-- Upcoming Events Section inside Dashboard -->
+            <div class="dashboard-sub-section">
+                <div class="section-header">
+                    <h2>📅 Upcoming Events <span id="dashUpcomingBadge" class="section-badge">0</span></h2>
+                    <button type="button" id="dashManageBookingsLink" class="btn-clear-small">Manage All Bookings</button>
+                </div>
+                <div id="dashUpcomingGrid" class="upcoming-list-grid"></div>
+            </div>
+
+            <!-- Recently Viewed Events Section inside Dashboard -->
+            <div class="task4-section">
+                <div class="section-header">
+                    <h2>🕒 Recently Viewed Events <span id="dashRecentBadge" class="section-badge">0</span></h2>
+                    <button type="button" id="dashClearRecentBtn" class="btn-clear-small" style="display: none;">Clear History</button>
+                </div>
+                <div id="dashRecentGrid" class="event-grid"></div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Event Details Modal -->
+    <div id="eventModal" class="modal">
+        <div class="modal-content">
+            <span id="closeModalBtn" class="close-btn">&times;</span>
+            <img id="modalImage" src="" alt="Event Image" class="modal-img" onerror="handleImageFallback(this)">
+            <h2 id="modalTitle"></h2>
+            <p><strong>Category:</strong> <span id="modalCategory"></span></p>
+            <p><strong>Date:</strong> <span id="modalDate"></span></p>
+            <p><strong>Location:</strong> <span id="modalLocation"></span></p>
+            <p><strong>Price:</strong> ₹<span id="modalPrice"></span></p>
+            <p id="modalDescription" class="modal-desc"></p>
+            <div class="modal-actions">
+                <button id="modalBookNowBtn" class="btn-book">Book Now</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Event Booking Modal -->
+    <div id="bookingModal" class="modal">
+        <div class="modal-content">
+            <span id="closeBookingBtn" class="close-btn">&times;</span>
+            <h2>Book Event Tickets</h2>
+
+            <!-- Selected Event Name & Ticket Price -->
+            <div class="booking-summary-box">
+                <p><strong>Selected Event:</strong> <span id="bookingEventName"></span></p>
+                <p><strong>Ticket Price:</strong> ₹<span id="bookingTicketPrice">0</span> per ticket</p>
+            </div>
+
+            <form id="bookingForm" novalidate>
+                <div class="form-group">
+                    <label for="bookingName">Full Name</label>
+                    <input type="text" id="bookingName" placeholder="Enter your full name">
+                    <span id="bookingNameError" class="error-text"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="bookingEmail">Email Address</label>
+                    <input type="email" id="bookingEmail" placeholder="Enter your email">
+                    <span id="bookingEmailError" class="error-text"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="bookingPhone">Phone Number</label>
+                    <input type="tel" id="bookingPhone" placeholder="e.g., 9876543210">
+                    <span id="bookingPhoneError" class="error-text"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="bookingTickets">Number of Tickets</label>
+                    <input type="number" id="bookingTickets" min="1" value="1">
+                    <span id="bookingTicketsError" class="error-text"></span>
+                </div>
+
+                <!-- Automatic Total Amount Calculation -->
+                <div class="booking-total-box">
+                    <span>Total Ticket Amount:</span>
+                    <span>₹<span id="bookingTotalAmount">0</span></span>
+                </div>
+
+                <button type="submit" class="btn-book full-width">Confirm Booking</button>
+            </form>
+
+            <!-- Success Message After Valid Submission -->
+            <div id="bookingSuccessMessage" class="booking-success-box"></div>
+        </div>
+    </div>
+
+    <!-- Task 1: Edit Booking Modal -->
+    <div id="editBookingModal" class="modal">
+        <div class="modal-content">
+            <span id="closeEditBookingBtn" class="close-btn">&times;</span>
+            <h2>Edit Booking Details</h2>
+
+            <div class="booking-summary-box">
+                <p><strong>Booking ID:</strong> <span id="editBookingIdLabel"></span></p>
+                <p><strong>Event:</strong> <span id="editBookingEventName"></span></p>
+                <p><strong>Ticket Price:</strong> ₹<span id="editBookingTicketPrice">0</span> per ticket</p>
+            </div>
+
+            <form id="editBookingForm" novalidate>
+                <div class="form-group">
+                    <label for="editBookingName">Full Name</label>
+                    <input type="text" id="editBookingName" placeholder="Enter full name">
+                    <span id="editBookingNameError" class="error-text"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="editBookingEmail">Email Address</label>
+                    <input type="email" id="editBookingEmail" placeholder="Enter email address">
+                    <span id="editBookingEmailError" class="error-text"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="editBookingPhone">Phone Number</label>
+                    <input type="tel" id="editBookingPhone" placeholder="e.g., 9876543210">
+                    <span id="editBookingPhoneError" class="error-text"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="editBookingTickets">Number of Tickets</label>
+                    <input type="number" id="editBookingTickets" min="1" value="1">
+                    <span id="editBookingTicketsError" class="error-text"></span>
+                </div>
+
+                <div class="form-group">
+                    <label for="editBookingStatus">Booking Status</label>
+                    <select id="editBookingStatus">
+                        <option value="Confirmed">Confirmed</option>
+                        <option value="Cancelled">Cancelled</option>
+                    </select>
+                </div>
+
+                <div class="booking-total-box">
+                    <span>Updated Total Amount:</span>
+                    <span>₹<span id="editBookingTotalAmount">0</span></span>
+                </div>
+
+                <button type="submit" class="btn-primary full-width">Save Changes</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Confirmation Dialog Modal (Non-blocking alternative to confirm()) -->
+    <div id="confirmActionModal" class="modal" style="z-index: 1600;">
+        <div class="modal-content" style="max-width: 420px;">
+            <h2 id="confirmActionTitle">Confirm Action</h2>
+            <p id="confirmActionMessage" class="modal-desc"></p>
+            <div class="modal-actions">
+                <button type="button" id="confirmActionNoBtn" class="btn-clear-small">Keep</button>
+                <button type="button" id="confirmActionYesBtn" class="btn-secondary">Proceed</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Login Modal -->
+    <div id="loginModal" class="modal">
+        <div class="modal-content auth-modal">
+            <span id="closeLoginBtn" class="close-btn">&times;</span>
+            <h2>Login to Your Account</h2>
+            <form id="loginForm" onsubmit="handleAuth(event, 'Login')">
+                <div class="form-group">
+                    <label for="loginEmail">Email Address</label>
+                    <input type="email" id="loginEmail" required placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn-primary full-width">Login</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Signup Modal -->
+    <div id="signupModal" class="modal">
+        <div class="modal-content auth-modal">
+            <span id="closeSignupBtn" class="close-btn">&times;</span>
+            <h2>Create an Account</h2>
+            <form id="signupForm" onsubmit="handleAuth(event, 'Sign Up')">
+                <div class="form-group">
+                    <label for="signupName">Full Name</label>
+                    <input type="text" id="signupName" required placeholder="Enter your full name">
+                </div>
+                <div class="form-group">
+                    <label for="signupEmail">Email Address</label>
+                    <input type="email" id="signupEmail" required placeholder="Enter your email">
+                </div>
+                <div class="form-group">
+                    <label for="signupPassword">Password</label>
+                    <input type="password" id="signupPassword" required placeholder="••••••••">
+                </div>
+                <button type="submit" class="btn-primary full-width">Sign Up</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Toast Notification Banner -->
+    <div id="toastBanner" class="toast-banner"></div>
+
+    <!-- Footer Section -->
+    <footer class="footer" id="about">
+        <div class="footer-container">
+            <div class="footer-col">
+                <h3>KhanEvent</h3>
+                <p>Your ultimate destination for finding, filtering, and exploring concerts, tech summits, workshops, and sports events worldwide.</p>
+            </div>
+            <div class="footer-col">
+                <h4>Quick Links</h4>
+                <ul>
+                <a href="#" id="navExplore" class="nav-link active-nav">Explore</a><br>
+                <a href="#eventGrid" id="navEvents" class="nav-link">Events</a><br>
+                <a href="#bookingsSection" id="navBookings" class="nav-link">Manage Bookings</a><br>
+                <a href="#dashboard" id="navDashboard" class="nav-link">My Dashboard</a><br>
+                <a href="#about" class="nav-link">About</a><br>
+                </ul>
+            </div>
+            <div class="footer-col">
+                <h4>Connect With Us</h4>
+                <div class="social-links">
+                    <a href="#" aria-label="Twitter">Twitter</a>
+                    <a href="#" aria-label="Facebook">Facebook</a>
+                    <a href="#" aria-label="Instagram">Instagram</a>
+                    <a href="#" aria-label="LinkedIn">LinkedIn</a><br>
+                </div>
+                <p>Email : KhanEvent@gmail.com<br>
+                   phone : 2345678910<br>
+                   Address : gujarat ankleshwar , 23023 , RD road</p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; 2026 Dynamic KhanEvent . All rights reserved.</p>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
