@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Dynamic Event Dictionary</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=booking-status-sync-3">
 </head>
 <body>
 
@@ -12,17 +12,20 @@
     <div class="header-sticky">
         <div class="header-content">
             <div class="logo-area">
-                <div class="logo-title-row">
-                    <span class="ke-logo-badge" aria-label="KE Logo">KE</span>
-                    <h1>KhanEvent</h1>
-                </div>
-                <p>Discover and filter upcoming exciting events</p>
+                <a href="#exploreView" class="logo-link" aria-label="KhanEvent Home">
+                    <div class="logo-title-row">
+                        <span class="ke-logo-badge" aria-label="KE Logo">KE</span>
+                        <h1>KhanEvent</h1>
+                    </div>
+                    <p>Discover and filter upcoming exciting events</p>
+                </a>
             </div>
             <nav class="main-nav">
-                <a href="#explore" id="navExplore" class="nav-link active-nav">Explore</a>
+                <a href="#exploreView" id="navExplore" class="nav-link active-nav">Explore</a>
                 <a href="#eventGrid" id="navEvents" class="nav-link">Events</a>
                 <a href="#bookingsSection" id="navBookings" class="nav-link">Manage Bookings</a>
-                <a href="#dashboard" id="navDashboard" class="nav-link">My Dashboard</a>
+                <a href="#dashboardView" id="navDashboard" class="nav-link">My Dashboard</a>
+                <a href="my_bookings.php" id="navMyBookings" class="nav-link">My Bookings</a>
                 <a href="#about" class="nav-link">About</a>
             </nav>
             <div class="auth-buttons">
@@ -43,9 +46,7 @@
     <!-- Main Content -->
     <main class="container">
 
-        <!-- =========================================================
-             EXPLORE & EVENTS VIEW (Default View)
-             ========================================================= -->
+        <!-- EXPLORE & EVENTS VIEW (Default View) -->
         <div id="exploreView">
             <!-- Controls Section: Search Bar + Filters + Sorting -->
             <section class="controls">
@@ -83,20 +84,30 @@
                 <p>Showing <span id="eventCount">0</span> events</p>
             </div>
 
+            <!-- View Events from Database Button -->
+            <div style="margin-bottom: 2rem; text-align: left;">
+                <a href="admin_events.php" class="btn-solid" style="background: #374151; color: #fff; text-decoration: none; padding: 0.85rem 1.5rem; border-radius: 6px; font-size: 1rem; font-weight: 600; display: inline-block; margin-left: .5rem;">Manage Events</a>
+            </div>
+
             <!-- Event Grid Container -->
             <div id="eventGrid" class="event-grid"></div>
+            <div style="margin: 1rem 0 2rem; text-align: left;">
+                <a href="events_db.php" class="btn-solid" style="background: #4f46e5; color: #fff; text-decoration: none; padding: 0.85rem 1.5rem; border-radius: 6px; font-size: 1rem; font-weight: 600; display: inline-block; box-shadow: 0 4px 6px rgba(79, 70, 229, 0.3);">More Events</a>
+            </div>
 
-            <!-- Task 1: Manage Event Bookings Section (Table, Edit, Cancel, Delete, Status, Totals) -->
+            <!-- Manage Event Bookings Section (Table, Edit, Cancel, Delete, Status, Totals) -->
             <section id="bookingsSection" class="task4-section" aria-labelledby="manageBookingsHeading">
                 <div class="section-header">
                     <h2 id="manageBookingsHeading">🎟️ Manage Event Bookings <span id="manageBookingsCount" class="section-badge">0</span></h2>
                     <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+                        <button type="button" onclick="window.location.href='view_bookings.php'" class="btn-secondary">View Booking Records</button>
+                        <button id="exportCsvBtn" type="button" class="btn-export-csv">📥 Export CSV</button>
                         <button id="goToDashboardBtn" type="button" class="btn-primary">Open My Dashboard →</button>
                         <button id="clearAllBookingsBtn" type="button" class="btn-clear-small" style="display: none;">Delete All Bookings</button>
                     </div>
                 </div>
 
-                <!-- Summary Bar: Total Bookings, Confirmed, Cancelled, Total Booking Amount -->
+                <!-- Summary Bar: Total, Confirmed, Pending, Cancelled and Booking Amount -->
                 <div class="booking-stats-bar">
                     <div class="booking-stat-pill">
                         <span class="stat-label">Total Bookings</span>
@@ -106,6 +117,10 @@
                         <span class="stat-label">Confirmed Bookings</span>
                         <span id="statConfirmedBookings" class="stat-value">0</span>
                     </div>
+                    <div class="booking-stat-pill pending">
+                        <span class="stat-label">Pending Bookings</span>
+                        <span id="statPendingBookings" class="stat-value">0</span>
+                    </div>
                     <div class="booking-stat-pill cancelled">
                         <span class="stat-label">Cancelled Bookings</span>
                         <span id="statCancelledBookings" class="stat-value">0</span>
@@ -113,6 +128,21 @@
                     <div class="booking-stat-pill amount">
                         <span class="stat-label">Total Booking Amount</span>
                         <span id="statTotalBookingAmount" class="stat-value">₹0</span>
+                    </div>
+                </div>
+
+                <!-- Search Bookings by Event Name & Filter by Status -->
+                <div class="booking-filter-bar">
+                    <div class="booking-search-box">
+                        <input type="text" id="bookingSearchInput" placeholder="Search bookings by customer name, email or event..." autocomplete="off">
+                    </div>
+                    <div class="booking-status-controls">
+                        <label for="bookingStatusFilter">Status:</label>
+                        <select id="bookingStatusFilter">
+                            <option value="All">All Bookings</option>
+                            <option value="Confirmed">Confirmed</option>
+                            <option value="Cancelled">Cancelled</option>
+                        </select>
                     </div>
                 </div>
 
@@ -154,9 +184,7 @@
             </section>
         </div>
 
-        <!-- =========================================================
-             TASK 2: MY DASHBOARD VIEW
-             ========================================================= -->
+        <!-- MY DASHBOARD VIEW-->
         <section id="dashboardView" class="dashboard-view" aria-labelledby="dashboardHeading">
             <div class="dashboard-header-card">
                 <div>
@@ -257,7 +285,9 @@
                 <p><strong>Ticket Price:</strong> ₹<span id="bookingTicketPrice">0</span> per ticket</p>
             </div>
 
-            <form id="bookingForm" novalidate>
+            <form id="bookingForm" action="php_backend/process_booking.php" method="POST" novalidate>
+                <!-- Hidden field carrying the selected event name to the PHP backend -->
+                <input type="hidden" name="event_name" id="bookingEventNameHidden" value="">
                 <div class="form-group">
                     <label for="bookingName">Full Name</label>
                     <input type="text" id="bookingName" placeholder="Enter your full name">
@@ -336,6 +366,7 @@
                 <div class="form-group">
                     <label for="editBookingStatus">Booking Status</label>
                     <select id="editBookingStatus">
+                        <option value="Pending">Pending</option>
                         <option value="Confirmed">Confirmed</option>
                         <option value="Cancelled">Cancelled</option>
                     </select>
@@ -418,11 +449,12 @@
             <div class="footer-col">
                 <h4>Quick Links</h4>
                 <ul>
-                <a href="#" id="navExplore" class="nav-link active-nav">Explore</a><br>
-                <a href="#eventGrid" id="navEvents" class="nav-link">Events</a><br>
-                <a href="#bookingsSection" id="navBookings" class="nav-link">Manage Bookings</a><br>
-                <a href="#dashboard" id="navDashboard" class="nav-link">My Dashboard</a><br>
-                <a href="#about" class="nav-link">About</a><br>
+                    <li><a href="#exploreView" class="nav-link">Explore</a></li>
+                    <li><a href="#eventGrid" class="nav-link">Events</a></li>
+                    <li><a href="#bookingsSection" class="nav-link">Manage Bookings</a></li>
+                    <li><a href="#dashboardView" class="nav-link">My Dashboard</a></li>
+                    <li><a href="my_bookings.php" class="nav-link">My Bookings</a></li>
+                    <li><a href="#about" class="nav-link">About</a></li>
                 </ul>
             </div>
             <div class="footer-col">
@@ -443,6 +475,6 @@
         </div>
     </footer>
 
-    <script src="script.js"></script>
+    <script src="script.js?v=booking-status-sync-3"></script>
 </body>
 </html>

@@ -1,4 +1,4 @@
- function handleImageFallback(imgElement) {
+function handleImageFallback(imgElement) {
             if (!imgElement || imgElement.dataset.fallbackApplied === 'true') return;
             imgElement.dataset.fallbackApplied = 'true';
             const label = (imgElement.alt || 'KhanEvent').replace(/[<>&"]/g, '');
@@ -18,89 +18,8 @@
             imgElement.src = `data:image/svg+xml;charset=UTF-8,${encodeURIComponent(svg)}`;
         }
 
-        // Event Data Array (Original 8 events preserved)
-        const events = [
-            {
-                id: 1,
-                name: "Summer Music Fest",
-                image: "images/music.jpg",
-                category: "Music",
-                date: "2026-12-15",
-                location: "Central Park, NY",
-                price: 7500,
-                description: "Experience a full day of live music performances featuring top indie bands and global artists."
-            },
-            {
-                id: 2,
-                name: "Tech Innovators Summit",
-                image: "images/work.jpg",
-                category: "Technology",
-                date: "2026-12-22",
-                location: "Convention Center, SF",
-                price: 1500,
-                description: "Join leading technologists and developers to discuss AI advancements, web standards, and the future of cloud computing."
-            },
-            {
-                id: 3,
-                name: "UI/UX Design Masterclass",
-                image: "images/OJ.jpg",
-                category: "Workshop",
-                date: "2026-12-28",
-                location: "Online (Virtual)",
-                price: 4050,
-                description: "An intensive hands-on workshop covering user research, wireframing, and modern design systems."
-            },
-            {
-                id: 4,
-                name: "City Marathon 2026",
-                image: "images/sport.jpg",
-                category: "Sports",
-                date: "2027-01-05",
-                location: "Downtown Stadium, Chicago",
-                price: 3500,
-                description: "Run through the city's most iconic landmarks. Suitable for amateur runners and seasoned athletes alike."
-            },
-            {
-                id: 5,
-                name: "Jazz Night Under the Stars",
-                image: "images/musicc.jpg",
-                category: "Music",
-                date: "2027-01-14",
-                location: "Riverside Amphitheater, New Orleans",
-                price: 5800,
-                description: "An intimate evening of smooth jazz tunes performed by world-renowned instrumentalists."
-            },
-            {
-                id: 6,
-                name: "AI & Machine Learning Hackathon",
-                image: "images/akk.jpg",
-                category: "Technology",
-                date: "2027-01-22",
-                location: "Tech Hub, Seattle",
-                price: 4200,
-                description: "Build cutting-edge machine learning models over 48 hours and compete for amazing prizes."
-            },
-            {
-                id: 7,
-                name: "Photography Fundamentals",
-                image: "images/camera.jpg",
-                category: "Workshop",
-                date: "2027-02-04",
-                location: "Artisan Studio, Austin",
-                price: 6000,
-                description: "Master manual camera settings, framing techniques, and outdoor lighting basics."
-            },
-            {
-                id: 8,
-                name: "Regional Basketball Finals",
-                image: "images/sp.jpg",
-                category: "Sports",
-                date: "2027-02-18",
-                location: "Indoor Arena, Los Angeles",
-                price: 9900,
-                description: "Witness the top regional teams go head-to-head in a thrilling championship showdown."
-            }
-        ];
+        // Events are loaded dynamically from the MySQL database via api/get_events.php (PDO)
+        let events = [];
 
         // DOM Elements
         const exploreView = document.getElementById('exploreView');
@@ -134,8 +53,14 @@
         const clearAllBookingsBtn = document.getElementById('clearAllBookingsBtn');
         const statTotalBookings = document.getElementById('statTotalBookings');
         const statConfirmedBookings = document.getElementById('statConfirmedBookings');
+        const statPendingBookings = document.getElementById('statPendingBookings');
         const statCancelledBookings = document.getElementById('statCancelledBookings');
         const statTotalBookingAmount = document.getElementById('statTotalBookingAmount');
+
+        // Task 3: Export CSV, Booking Search & Status Filter DOM Elements
+        const exportCsvBtn = document.getElementById('exportCsvBtn');
+        const bookingSearchInput = document.getElementById('bookingSearchInput');
+        const bookingStatusFilter = document.getElementById('bookingStatusFilter');
 
         // Task 2: Dashboard DOM Elements
         const dashboardWelcomeSubtitle = document.getElementById('dashboardWelcomeSubtitle');
@@ -283,12 +208,12 @@
             const loaded = loadFromStorage(BOOKINGS_STORAGE_KEY);
             // Ensure legacy bookings have status and unitPrice normalized
             return loaded.map(b => {
-                const matchedEvent = events.find(e => e.id === b.eventId);
+                const matchedEvent = events.find(e => e.id === Number(b.eventId));
                 const inferredUnitPrice = b.unitPrice || (matchedEvent ? matchedEvent.price : (b.tickets > 0 ? Math.round(b.totalAmount / b.tickets) : 0));
                 return {
                     ...b,
                     unitPrice: inferredUnitPrice,
-                    status: b.status === 'Cancelled' ? 'Cancelled' : 'Confirmed'
+                    status: ['Pending', 'Confirmed', 'Cancelled'].includes(b.status) ? b.status : 'Confirmed'
                 };
             });
         }
@@ -297,7 +222,8 @@
         function initializeRecentlyViewedWithSamples() {
             const raw = localStorage.getItem(RECENT_STORAGE_KEY);
             if (raw === null) {
-                const defaults = [1, 2];
+                // Use valid MySQL event IDs (events loaded from database start at id 15)
+                const defaults = [15, 16];
                 saveToStorage(RECENT_STORAGE_KEY, defaults);
                 return defaults;
             }
@@ -409,29 +335,14 @@
         // =========================================================
         // AUTH HELPERS & UI
         // =========================================================
+        let currentUser = null;
+
         function getCurrentUser() {
-            try {
-                const raw = localStorage.getItem(CURRENT_USER_KEY);
-                return raw ? JSON.parse(raw) : null;
-            } catch (err) {
-                return null;
-            }
+            return currentUser;
         }
 
         function setCurrentUser(user) {
-            try {
-                if (user) {
-                    localStorage.setItem(CURRENT_USER_KEY, JSON.stringify(user));
-                } else {
-                    localStorage.removeItem(CURRENT_USER_KEY);
-                }
-            } catch (err) {
-                console.error('Auth storage error:', err);
-            }
-        }
-
-        function getRegisteredUsers() {
-            return loadFromStorage(REGISTERED_USERS_KEY);
+            currentUser = user;
         }
 
         function formatNameFromEmail(email) {
@@ -478,10 +389,21 @@
             }
         }
 
-        function handleLogout() {
-            setCurrentUser(null);
-            updateAuthUI();
-            showToast('Logged out successfully');
+        async function handleLogout() {
+            try {
+                const response = await fetch('api/auth.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: 'logout' })
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) throw new Error(result.message || 'Logout failed.');
+                setCurrentUser(null);
+                updateAuthUI();
+                showToast('Logged out successfully');
+            } catch (error) {
+                showToast(error.message || 'Could not log out. Please try again.');
+            }
         }
 
         // Guard: require login before allowing booking / CRUD actions.
@@ -533,6 +455,9 @@
             const isFavorited = favoriteIds.includes(event.id);
             const card = document.createElement('div');
             card.className = 'event-card';
+            const imageMarkup = event.image
+                ? `<img src="${event.image}" alt="${event.name}" class="event-img" onerror="handleImageFallback(this)">`
+                : '';
 
             let cancelBtnHtml = '';
             if (showCancelFavorite) {
@@ -542,8 +467,8 @@
             }
 
             card.innerHTML = `
-                <div class="event-img-wrapper">
-                    <img src="${event.image}" alt="${event.name}" class="event-img" onerror="handleImageFallback(this)">
+                <div class="event-img-wrapper" style="height:${event.image ? '160px' : '36px'}">
+                    ${imageMarkup}
                     <button 
                         class="fav-btn ${isFavorited ? 'active' : ''}" 
                         onclick="toggleFavorite(${event.id})" 
@@ -595,26 +520,18 @@
             const event = events.find(e => e.id === eventId);
             if (!event) return;
 
-            currentBookingEvent = event;
+            // Close any open event details modal and open the PHP booking form
+            // with the selected event pre-filled via the query string so the
+            // booking data can be persisted to Manage Bookings & Dashboard.
             eventModal.style.display = 'none';
-
-            bookingForm.reset();
-            bookingTickets.value = 1;
-            clearBookingErrors();
-            bookingSuccessMessage.style.display = 'none';
-            bookingSuccessMessage.textContent = '';
-
-            const currentUser = getCurrentUser();
-            if (currentUser) {
-                bookingName.value = currentUser.name || '';
-                bookingEmail.value = currentUser.email || '';
-            }
-
-            bookingEventName.textContent = event.name;
-            bookingTicketPrice.textContent = event.price.toLocaleString('en-IN');
-            updateBookingTotal();
-
-            bookingModal.style.display = 'flex';
+            const params = new URLSearchParams({
+                event_name: event.name,
+                event_date: event.date,
+                event_location: event.location,
+                unit_price: event.price,
+                event_id: event.id
+            });
+            window.location.href = `php_backend/process_booking.php?${params.toString()}`;
         }
 
         function closeBookingModal() {
@@ -699,7 +616,8 @@
         }
 
         bookingForm.addEventListener('submit', (e) => {
-            e.preventDefault();
+            // NOTE: The form submits to php_backend/process_booking.php (POST).
+            // PHP performs server-side validation and displays the confirmation.
             bookingSuccessMessage.style.display = 'none';
 
             const valid = validateBookingInputs(bookingName, bookingEmail, bookingPhone, bookingTickets, {
@@ -770,20 +688,111 @@
         bookingPhone.addEventListener('input', () => clearFieldError(bookingPhone, bookingPhoneError));
 
         // =========================================================
-        // TASK 1: MANAGE EVENT BOOKINGS (TABLE, EDIT, CANCEL, DELETE)
+        // TASK 3: FILTER HELPER & EXPORT CSV FUNCTIONALITY
         // =========================================================
+        function getFilteredBookings() {
+            const searchTerm = bookingSearchInput ? bookingSearchInput.value.toLowerCase().trim() : '';
+            const statusFilterVal = bookingStatusFilter ? bookingStatusFilter.value : 'All';
+
+            return allBookings.filter((booking) => {
+                const matchesSearch = searchTerm === '' ||
+                    (booking.eventName || '').toLowerCase().includes(searchTerm) ||
+                    (booking.attendeeName || '').toLowerCase().includes(searchTerm) ||
+                    (booking.attendeeEmail || '').toLowerCase().includes(searchTerm);
+                const matchesStatus = statusFilterVal === 'All' || booking.status === statusFilterVal;
+                return matchesSearch && matchesStatus;
+            });
+        }
+
+        function escapeCsvCell(value) {
+            const str = value === null || value === undefined ? '' : String(value);
+            if (/[",\n\r]/.test(str)) {
+                return `"${str.replace(/"/g, '""')}"`;
+            }
+            return str;
+        }
+
+        function exportBookingsToCSV() {
+            const recordsToExport = getFilteredBookings();
+
+            if (recordsToExport.length === 0) {
+                showToast('No booking records available to export.');
+                return;
+            }
+
+            const headers = [
+                'Booking ID',
+                'Event Name',
+                'Event Date',
+                'Event Location',
+                'Attendee Name',
+                'Attendee Email',
+                'Attendee Phone',
+                'Unit Price (INR)',
+                'Tickets',
+                'Total Amount (INR)',
+                'Status',
+                'Booked At'
+            ];
+
+            const rows = recordsToExport.map(b => [
+                b.bookingId,
+                b.eventName,
+                b.eventDate,
+                b.eventLocation,
+                b.attendeeName,
+                b.attendeeEmail,
+                b.attendeePhone,
+                b.unitPrice,
+                b.tickets,
+                b.totalAmount,
+                b.status,
+                b.bookedAt || ''
+            ]);
+
+            const csvContent = [
+                headers.map(escapeCsvCell).join(','),
+                ...rows.map(row => row.map(escapeCsvCell).join(','))
+            ].join('\r\n');
+
+            const blob = new Blob(['\uFEFF' + csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const downloadLink = document.createElement('a');
+            downloadLink.href = url;
+            downloadLink.setAttribute('download', 'khanevent_bookings.csv');
+            document.body.appendChild(downloadLink);
+            downloadLink.click();
+            document.body.removeChild(downloadLink);
+            URL.revokeObjectURL(url);
+
+            showToast(`Exported ${recordsToExport.length} booking record(s) to CSV!`);
+        }
+
+        if (exportCsvBtn) {
+            exportCsvBtn.addEventListener('click', exportBookingsToCSV);
+        }
+        if (bookingSearchInput) {
+            bookingSearchInput.addEventListener('input', renderBookingsTable);
+        }
+        if (bookingStatusFilter) {
+            bookingStatusFilter.addEventListener('change', renderBookingsTable);
+        }
+
+        // TASK 1: MANAGE EVENT BOOKINGS (TABLE, EDIT, CANCEL, DELETE)
         function renderBookingsTable() {
             if (!bookingsTableBody) return;
 
             const totalCount = allBookings.length;
             const confirmedList = allBookings.filter(b => b.status === 'Confirmed');
+            const pendingList = allBookings.filter(b => b.status === 'Pending');
             const cancelledList = allBookings.filter(b => b.status === 'Cancelled');
             const totalConfirmedAmount = confirmedList.reduce((sum, b) => sum + Number(b.totalAmount || 0), 0);
 
-            // Update Summary Badges & Pills
+            // Update Summary Badges & Pills (always reflects full booking records)
             manageBookingsCount.textContent = totalCount;
             statTotalBookings.textContent = totalCount;
             statConfirmedBookings.textContent = confirmedList.length;
+            statPendingBookings.textContent = pendingList.length;
             statCancelledBookings.textContent = cancelledList.length;
             statTotalBookingAmount.textContent = `₹${totalConfirmedAmount.toLocaleString('en-IN')}`;
             clearAllBookingsBtn.style.display = totalCount > 0 ? 'inline-block' : 'none';
@@ -801,8 +810,22 @@
                 return;
             }
 
-            allBookings.forEach((booking) => {
+            const filteredBookings = getFilteredBookings();
+
+            if (filteredBookings.length === 0) {
+                bookingsTableBody.innerHTML = `
+                    <tr>
+                        <td colspan="7" style="text-align: center; padding: 2rem; color: #6b7280;">
+                            No bookings match your search or status filter.
+                        </td>
+                    </tr>
+                `;
+                return;
+            }
+
+            filteredBookings.forEach((booking) => {
                 const isCancelled = booking.status === 'Cancelled';
+                const bookingStatus = ['Pending', 'Confirmed', 'Cancelled'].includes(booking.status) ? booking.status : 'Confirmed';
                 const tr = document.createElement('tr');
                 if (isCancelled) {
                     tr.className = 'row-cancelled';
@@ -821,8 +844,8 @@
                     <td><strong>${booking.tickets}</strong> × ₹${Number(booking.unitPrice).toLocaleString('en-IN')}</td>
                     <td><strong style="color: ${isCancelled ? '#6b7280' : '#059669'};">₹${Number(booking.totalAmount).toLocaleString('en-IN')}</strong></td>
                     <td>
-                        <span class="status-badge ${isCancelled ? 'status-cancelled' : 'status-confirmed'}">
-                            ${isCancelled ? '● Cancelled' : '● Confirmed'}
+                        <span class="status-badge status-${bookingStatus.toLowerCase()}">
+                            ● ${bookingStatus}
                         </span>
                     </td>
                     <td>
@@ -881,7 +904,7 @@
         editBookingTickets.addEventListener('input', updateEditBookingTotal);
         closeEditBookingBtn.addEventListener('click', closeEditBookingModal);
 
-        editBookingForm.addEventListener('submit', (e) => {
+        editBookingForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             if (!editingBookingId) return;
 
@@ -899,8 +922,7 @@
 
             const qty = parseInt(editBookingTickets.value, 10);
             const updatedTotal = Number(allBookings[idx].unitPrice) * qty;
-
-            allBookings[idx] = {
+            const updatedBooking = {
                 ...allBookings[idx],
                 attendeeName: editBookingName.value.trim(),
                 attendeeEmail: editBookingEmail.value.trim(),
@@ -910,7 +932,36 @@
                 totalAmount: updatedTotal
             };
 
+            // Save database-backed bookings first so the HTML and PHP pages cannot drift.
+            const dbBookingId = updatedBooking.dbBookingId;
+            if (dbBookingId) {
+                try {
+                    const updateResp = await fetch('api/update_booking.php', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            id: dbBookingId,
+                            customer_name: editBookingName.value.trim(),
+                            email: editBookingEmail.value.trim(),
+                            ticket_quantity: qty,
+                            status: editBookingStatus.value
+                        })
+                    });
+                    const updateData = await updateResp.json();
+                    if (!updateResp.ok || !updateData.success) {
+                        showToast(updateData.message || 'Could not save the booking to the database.');
+                        return;
+                    }
+                } catch (err) {
+                    console.warn('Could not update booking in MySQL:', err);
+                    showToast('Could not connect to the database. Booking was not changed.');
+                    return;
+                }
+            }
+
+            allBookings[idx] = updatedBooking;
             saveToStorage(BOOKINGS_STORAGE_KEY, allBookings);
+
             renderBookingsTable();
             renderDashboard();
             closeEditBookingModal();
@@ -918,7 +969,7 @@
         });
 
         // Mark booking status as Cancelled (keeps record in table & updates Dashboard Cancelled count)
-        function cancelBookingStatus(bookingId) {
+        async function cancelBookingStatus(bookingId) {
             if (!requireLogin()) return;
 
             const booking = allBookings.find(b => b.bookingId === bookingId);
@@ -928,7 +979,34 @@
                 'Cancel Booking',
                 `Are you sure you want to cancel booking #${bookingId} for "${booking.eventName}"?`,
                 'Yes, Cancel Booking',
-                () => {
+                async () => {
+                    // Persist cancellation to MySQL via PHP
+                    const dbBookingId = booking.dbBookingId;
+                    if (dbBookingId) {
+                        try {
+                            const cancelResp = await fetch('api/update_booking.php', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({
+                                    id: dbBookingId,
+                                    customer_name: booking.attendeeName,
+                                    email: booking.attendeeEmail,
+                                    ticket_quantity: booking.tickets,
+                                    status: 'Cancelled'
+                                })
+                            });
+                            const cancelData = await cancelResp.json();
+                            if (!cancelResp.ok || !cancelData.success) {
+                                showToast(cancelData.message || 'Could not cancel the booking in the database.');
+                                return;
+                            }
+                        } catch (err) {
+                            console.warn('Could not cancel booking in MySQL:', err);
+                            showToast('Could not connect to the database. Booking was not changed.');
+                            return;
+                        }
+                    }
+
                     booking.status = 'Cancelled';
                     saveToStorage(BOOKINGS_STORAGE_KEY, allBookings);
                     renderBookingsTable();
@@ -1025,7 +1103,7 @@
 
             // Render Recently Viewed Events Grid inside Dashboard
             const recentEvents = recentlyViewedIds
-                .map(id => events.find(e => e.id === id))
+                .map(id => events.find(e => e.id === Number(id)))
                 .filter(Boolean);
 
             dashRecentBadge.textContent = recentEvents.length;
@@ -1092,7 +1170,7 @@
 
         function renderFavorites() {
             const favEvents = favoriteIds
-                .map(id => events.find(e => e.id === id))
+                .map(id => events.find(e => e.id === Number(id)))
                 .filter(Boolean);
 
             favoritesCount.textContent = favEvents.length;
@@ -1111,7 +1189,7 @@
 
         function renderRecentlyViewed() {
             const recentEvents = recentlyViewedIds
-                .map(id => events.find(e => e.id === id))
+                .map(id => events.find(e => e.id === Number(id)))
                 .filter(Boolean);
 
             recentCount.textContent = recentEvents.length;
@@ -1170,11 +1248,13 @@
         }
 
         function openModal(eventId) {
-            const event = events.find(e => e.id === eventId);
+            const id = Number(eventId);
+            const event = events.find(e => e.id === id);
             if (!event) return;
 
             modalImage.dataset.fallbackApplied = 'false';
-            modalImage.src = event.image;
+            modalImage.hidden = !event.image;
+            if (event.image) modalImage.src = event.image;
             modalTitle.textContent = event.name;
             modalCategory.textContent = event.category;
             modalDate.textContent = event.date;
@@ -1270,41 +1350,37 @@
             return isValid;
         }
 
-        function handleAuth(event, type) {
+        async function handleAuth(event, type) {
             event.preventDefault();
             if (!validateAuthForm(type)) return;
-
-            if (type === 'Sign Up') {
-                const nameInput = signupNameInput.value.trim();
-                const emailInput = signupEmailInput.value.trim();
-                const users = getRegisteredUsers();
-                const existingIndex = users.findIndex(u => u.email.toLowerCase() === emailInput.toLowerCase());
-                const newUser = { name: nameInput, email: emailInput };
-
-                if (existingIndex === -1) users.push(newUser);
-                else users[existingIndex] = newUser;
-
-                saveToStorage(REGISTERED_USERS_KEY, users);
-                setCurrentUser(newUser);
+            const isSignup = type === 'Sign Up';
+            const payload = isSignup
+                ? { action: 'signup', name: signupNameInput.value.trim(), email: signupEmailInput.value.trim(), password: signupPasswordInput.value }
+                : { action: 'login', email: loginEmailInput.value.trim(), password: loginPasswordInput.value };
+            try {
+                const response = await fetch('api/auth.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const result = await response.json();
+                if (!response.ok || !result.success) {
+                    showToast(result.message || 'Authentication failed.');
+                    return;
+                }
+                setCurrentUser(result.user);
                 updateAuthUI();
-                showToast(`Welcome, ${nameInput}! Sign Up successful.`);
-            } else {
-                const emailInput = loginEmailInput.value.trim();
-                const users = getRegisteredUsers();
-                const matchedUser = users.find(u => u.email.toLowerCase() === emailInput.toLowerCase());
-                const activeUser = matchedUser || {
-                    name: formatNameFromEmail(emailInput),
-                    email: emailInput
-                };
-                setCurrentUser(activeUser);
-                updateAuthUI();
-                showToast(`Logged in as ${activeUser.name}`);
+                showToast(isSignup ? `Welcome, ${result.user.name}! Account created.` : `Logged in as ${result.user.name}`);
+                loginModal.style.display = 'none';
+                signupModal.style.display = 'none';
+                event.target.reset();
+                clearAuthErrors();
+                if (new URLSearchParams(window.location.search).get('login') === '1') {
+                    window.location.href = 'my_bookings.php';
+                }
+            } catch (error) {
+                showToast('Could not reach the server. Please try again.');
             }
-
-            loginModal.style.display = 'none';
-            signupModal.style.display = 'none';
-            event.target.reset();
-            clearAuthErrors();
         }
 
         clearFavoritesBtn.addEventListener('click', () => {
@@ -1337,10 +1413,102 @@
             if (e.target === signupModal) signupModal.style.display = 'none';
         });
 
-        // Initial Render on Page Load
-        updateAuthUI();
-        renderEvents(events);
-        renderFavorites();
-        renderRecentlyViewed();
-        renderBookingsTable();
-        renderDashboard();
+        // Load events from MySQL via the PHP PDO API (api/get_events.php)
+        async function fetchEvents() {
+            try {
+                const response = await fetch('api/get_events.php');
+                const data = await response.json();
+                if (data.success && Array.isArray(data.events)) {
+                    events = data.events.map(ev => ({
+                        id: ev.id,
+                        image: ev.image || '',
+                        name: ev.name,
+                        category: ev.category,
+                        date: ev.event_date,
+                        location: ev.location,
+                        price: parseFloat(ev.price)
+                    }));
+                } else {
+                    console.error('Failed to load events from API:', data.message);
+                }
+            } catch (err) {
+                console.error('Could not fetch events from MySQL:', err);
+            }
+            try {
+                const authResponse = await fetch('api/auth.php', { cache: 'no-store' });
+                const authResult = await authResponse.json();
+                if (authResult.success) setCurrentUser(authResult.user);
+            } catch (err) {
+                console.error('Could not load login session:', err);
+            }
+            if (new URLSearchParams(window.location.search).get('login') === '1') {
+                if (getCurrentUser()) window.location.href = 'my_bookings.php';
+                else loginModal.style.display = 'flex';
+            }
+            await fetchDatabaseBookings();
+            // Render once events are loaded (empty array shows "No events" if fetch failed)
+            updateAuthUI();
+            renderEvents(events);
+            renderFavorites();
+            renderRecentlyViewed();
+            renderBookingsTable();
+            renderDashboard();
+        }
+
+        // Refresh database-backed bookings so edits made in view_bookings.php
+        // are reflected in Manage Bookings and the dashboard.
+        async function fetchDatabaseBookings() {
+            try {
+                const response = await fetch('api/get_bookings.php', { cache: 'no-store' });
+                if (!response.ok) return;
+                const data = await response.json();
+                if (!data.success || !Array.isArray(data.bookings)) return;
+
+                const databaseBookings = data.bookings.map(row => {
+                    const event = events.find(item => Number(item.id) === Number(row.event_id));
+                    const ticketPrice = parseFloat(row.ticket_price) || 0;
+                    const quantity = parseInt(row.ticket_quantity, 10) || 0;
+                    return {
+                        bookingId: `DB-${row.id}`,
+                        dbBookingId: Number(row.id),
+                        eventId: Number(row.event_id),
+                        eventName: row.event_name || 'Unknown Event',
+                        eventDate: row.event_date || '',
+                        eventLocation: row.event_location || '',
+                        unitPrice: ticketPrice || (event ? Number(event.price) : 0),
+                        attendeeName: row.customer_name,
+                        attendeeEmail: row.email,
+                        attendeePhone: '',
+                        tickets: quantity,
+                        totalAmount: ticketPrice * quantity,
+                        status: ['Pending', 'Confirmed', 'Cancelled'].includes(row.status) ? row.status : 'Confirmed',
+                        bookedAt: row.booked_at || ''
+                    };
+                });
+
+                const dbIds = new Set(databaseBookings.map(booking => booking.dbBookingId));
+                const localOnlyBookings = allBookings.filter(booking => !booking.dbBookingId);
+                const unmatchedLocalDbBookings = allBookings.filter(booking => booking.dbBookingId && !dbIds.has(Number(booking.dbBookingId)));
+                allBookings = [...databaseBookings, ...unmatchedLocalDbBookings, ...localOnlyBookings];
+                saveToStorage(BOOKINGS_STORAGE_KEY, allBookings);
+            } catch (err) {
+                console.warn('Could not refresh bookings from MySQL:', err);
+            }
+        }
+
+        window.addEventListener('focus', async () => {
+            await fetchDatabaseBookings();
+            renderBookingsTable();
+            renderDashboard();
+        });
+
+        // Keep an already-open HTML page in sync with changes made in PHP.
+        window.setInterval(async () => {
+            if (document.visibilityState !== 'visible') return;
+            await fetchDatabaseBookings();
+            renderBookingsTable();
+            renderDashboard();
+        }, 5000);
+
+        // Initial Render on Page Load (events loaded from MySQL)
+        fetchEvents();

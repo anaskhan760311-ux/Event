@@ -1,4 +1,4 @@
-        :root {
+:root {
             --primary-color: #4f46e5;
             --primary-hover: #4338ca;
             --bg-color: #f3f4f6;
@@ -78,6 +78,20 @@
         .ke-logo-badge:hover {
             transform: scale(1.06);
             background: rgba(255, 255, 255, 0.28);
+        }
+
+        /* Logo link to home page */
+        .logo-link {
+            text-decoration: none;
+            color: inherit;
+            display: flex;
+            flex-direction: column;
+            gap: 0.25rem;
+            align-items: flex-start;
+        }
+
+        .logo-link:hover {
+            opacity: 0.95;
         }
 
         .logo-area h1 {
@@ -529,8 +543,85 @@
             color: #dc2626;
         }
 
+        .booking-stat-pill.pending .stat-value {
+            color: #d97706;
+        }
+
         .booking-stat-pill.amount .stat-value {
             color: var(--primary-color);
+        }
+
+        /* Task 3: Booking Search, Filter & Export Toolbar */
+        .booking-filter-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.85rem;
+            align-items: center;
+            justify-content: space-between;
+            background: #ffffff;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 0.85rem 1rem;
+            margin-bottom: 1rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
+        }
+
+        .booking-search-box {
+            flex: 1 1 260px;
+        }
+
+        .booking-search-box input {
+            width: 100%;
+            padding: 0.55rem 0.85rem;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-size: 0.92rem;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .booking-search-box input:focus {
+            border-color: var(--primary-color);
+        }
+
+        .booking-status-controls {
+            display: flex;
+            align-items: center;
+            gap: 0.65rem;
+            flex-wrap: wrap;
+        }
+
+        .booking-status-controls label {
+            font-size: 0.88rem;
+            font-weight: 600;
+            color: #374151;
+        }
+
+        .booking-status-controls select {
+            padding: 0.5rem 0.75rem;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 0.9rem;
+            background-color: #ffffff;
+        }
+
+        .btn-export-csv {
+            background-color: #0284c7;
+            color: #ffffff;
+            border: none;
+            padding: 0.45rem 0.9rem;
+            border-radius: 4px;
+            font-size: 0.88rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.35rem;
+            transition: background 0.2s;
+        }
+
+        .btn-export-csv:hover {
+            background-color: #0369a1;
         }
 
         .bookings-table-wrapper {
@@ -612,6 +703,12 @@
             background-color: #dcfce7;
             color: #166534;
             border: 1px solid #86efac;
+        }
+
+        .status-badge.status-pending {
+            background-color: #fef3c7;
+            color: #92400e;
+            border: 1px solid #fcd34d;
         }
 
         .status-badge.status-cancelled {
@@ -1012,6 +1109,14 @@
 
         .footer-col ul li a:hover {
             color: #ffffff;
+        }
+
+        .footer-col ul li {
+            margin-bottom: 0.5rem;
+        }
+
+        .footer-col ul li a {
+            display: inline-block;
         }
 
         .social-links {
