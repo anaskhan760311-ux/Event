@@ -38,7 +38,7 @@ if (!$input) {
 }
 
 $id       = isset($input['id']) ? (int)$input['id'] : 0;
-$name     = $_SESSION['event_user']['name'];
+$name     = isset($input['customer_name']) ? trim((string)$input['customer_name']) : $_SESSION['event_user']['name'];
 $email    = $_SESSION['event_user']['email'];
 $qty      = isset($input['ticket_quantity']) ? (int)$input['ticket_quantity'] : 0;
 $status   = isset($input['status']) ? trim($input['status']) : 'Confirmed';
@@ -48,9 +48,9 @@ if ($id <= 0) {
     echo json_encode(['success' => false, 'message' => 'Booking ID is required.']);
     exit;
 }
-if ($name === '') {
+if ($name === '' || strlen($name) > 255) {
     http_response_code(400);
-    echo json_encode(['success' => false, 'message' => 'Customer name is required.']);
+    echo json_encode(['success' => false, 'message' => 'Customer name is required and must be at most 255 characters.']);
     exit;
 }
 if ($email === '' || !filter_var($email, FILTER_VALIDATE_EMAIL)) {

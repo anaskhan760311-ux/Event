@@ -4,6 +4,8 @@ session_start();
 header('Content-Type: application/json; charset=utf-8');
 header('Cache-Control: no-store, private');
 require_once __DIR__ . '/../db.php';
+$bootstrapAdminEmails = require __DIR__ . '/../admin_config.php';
+$bootstrapAdminEmails = array_map('strtolower', $bootstrapAdminEmails['bootstrap_admin_emails']);
 
 try {
     $pdo->exec("CREATE TABLE IF NOT EXISTS users (
@@ -11,8 +13,17 @@ try {
         name VARCHAR(255) NOT NULL,
         email VARCHAR(255) NOT NULL UNIQUE,
         password_hash VARCHAR(255) NOT NULL,
+        role ENUM('user','admin') NOT NULL DEFAULT 'user',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4");
+    $roleColumn = $pdo->query("SHOW COLUMNS FROM users LIKE 'role'")->fetch();
+    if (!$roleColumn) {
+        $pdo->exec("ALTER TABLE users ADD role ENUM('user','admin') NOT NULL DEFAULT 'user' AFTER password_hash");
+    }
+    foreach ($bootstrapAdminEmails as $adminEmail) {
+        $promote = $pdo->prepare("UPDATE users SET role = 'admin' WHERE LOWER(email) = LOWER(?)");
+        $promote->execute([$adminEmail]);
+    }
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(['success' => false, 'message' => 'Could not prepare the user database.']);
@@ -27,7 +38,19 @@ function authResponse(int $status, array $body): void {
 
 $method = $_SERVER['REQUEST_METHOD'] ?? 'GET';
 if ($method === 'GET') {
-    authResponse(200, ['success' => true, 'user' => $_SESSION['event_user'] ?? null]);
+    $user = null;
+    if (!empty($_SESSION['event_user']['id'])) {
+        $stmt = $pdo->prepare('SELECT id, name, email, role FROM users WHERE id = ? LIMIT 1');
+        $stmt->execute([(int)$_SESSION['event_user']['id']]);
+        $user = $stmt->fetch() ?: null;
+        if ($user) {
+            $user['id'] = (int)$user['id'];
+            $_SESSION['event_user'] = $user;
+        } else {
+            unset($_SESSION['event_user']);
+        }
+    }
+    authResponse(200, ['success' => true, 'user' => $user]);
 }
 if ($method !== 'POST') {
     header('Allow: GET, POST');
@@ -66,14 +89,19 @@ if ($action === 'signup') {
         if ($e->getCode() === '23000') authResponse(409, ['success' => false, 'message' => 'An account with that email already exists.']);
         authResponse(500, ['success' => false, 'message' => 'Could not create your account.']);
     }
-    $user = ['id' => (int)$pdo->lastInsertId(), 'name' => $name, 'email' => $email];
+    $role = in_array($email, $bootstrapAdminEmails, true) ? 'admin' : 'user';
+    if ($role === 'admin') {
+        $promote = $pdo->prepare("UPDATE users SET role = 'admin' WHERE id = ?");
+        $promote->execute([$pdo->lastInsertId()]);
+    }
+    $user = ['id' => (int)$pdo->lastInsertId(), 'name' => $name, 'email' => $email, 'role' => $role];
     session_regenerate_id(true);
     $_SESSION['event_user'] = $user;
     authResponse(201, ['success' => true, 'user' => $user, 'message' => 'Account created.']);
 }
 
 if ($action === 'login') {
-    $stmt = $pdo->prepare('SELECT id, name, email, password_hash FROM users WHERE email = ? LIMIT 1');
+    $stmt = $pdo->prepare('SELECT id, name, email, password_hash, role FROM users WHERE email = ? LIMIT 1');
     $stmt->execute([$email]);
     $row = $stmt->fetch();
     if (!$row || !password_verify($password, $row['password_hash'])) {
@@ -83,7 +111,7 @@ if ($action === 'login') {
         $rehash = $pdo->prepare('UPDATE users SET password_hash = ? WHERE id = ?');
         $rehash->execute([password_hash($password, PASSWORD_DEFAULT), $row['id']]);
     }
-    $user = ['id' => (int)$row['id'], 'name' => $row['name'], 'email' => $row['email']];
+    $user = ['id' => (int)$row['id'], 'name' => $row['name'], 'email' => $row['email'], 'role' => $row['role']];
     session_regenerate_id(true);
     $_SESSION['event_user'] = $user;
     authResponse(200, ['success' => true, 'user' => $user, 'message' => 'Logged in.']);

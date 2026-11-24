@@ -166,56 +166,9 @@ function handleImageFallback(imgElement) {
             }
         }
 
-        // Pre-populate 2 realistic sample bookings if localStorage is empty so preview shows immediate live data
+        // Booking records come from MySQL; do not mix in browser-only sample rows.
         function initializeBookingsWithSamples() {
-            const raw = localStorage.getItem(BOOKINGS_STORAGE_KEY);
-            if (raw === null) {
-                const sampleBookings = [
-                    {
-                        bookingId: 'BK-482910',
-                        eventId: 1,
-                        eventName: 'Summer Music Fest',
-                        eventDate: '2026-12-15',
-                        eventLocation: 'Central Park, NY',
-                        unitPrice: 7500,
-                        attendeeName: 'Aarav Khan',
-                        attendeeEmail: 'aarav.khan@example.com',
-                        attendeePhone: '9876543210',
-                        tickets: 2,
-                        totalAmount: 15000,
-                        status: 'Confirmed',
-                        bookedAt: '19/11/2026, 10:15:00 AM'
-                    },
-                    {
-                        bookingId: 'BK-391045',
-                        eventId: 2,
-                        eventName: 'Tech Innovators Summit',
-                        eventDate: '2026-12-22',
-                        eventLocation: 'Convention Center, SF',
-                        unitPrice: 1500,
-                        attendeeName: 'Zoya Shaikh',
-                        attendeeEmail: 'zoya.shaikh@example.com',
-                        attendeePhone: '9123456780',
-                        tickets: 3,
-                        totalAmount: 4500,
-                        status: 'Confirmed',
-                        bookedAt: '18/11/2026, 04:40:00 PM'
-                    }
-                ];
-                saveToStorage(BOOKINGS_STORAGE_KEY, sampleBookings);
-                return sampleBookings;
-            }
-            const loaded = loadFromStorage(BOOKINGS_STORAGE_KEY);
-            // Ensure legacy bookings have status and unitPrice normalized
-            return loaded.map(b => {
-                const matchedEvent = events.find(e => e.id === Number(b.eventId));
-                const inferredUnitPrice = b.unitPrice || (matchedEvent ? matchedEvent.price : (b.tickets > 0 ? Math.round(b.totalAmount / b.tickets) : 0));
-                return {
-                    ...b,
-                    unitPrice: inferredUnitPrice,
-                    status: ['Pending', 'Confirmed', 'Cancelled'].includes(b.status) ? b.status : 'Confirmed'
-                };
-            });
+            return [];
         }
 
         // Initialize recently viewed with 2 sample event IDs if empty so Dashboard "Recently Viewed Events" is populated on first load
@@ -356,11 +309,15 @@ function handleImageFallback(imgElement) {
 
         function updateAuthUI() {
             const user = getCurrentUser();
+            document.querySelectorAll('.admin-only').forEach(link => {
+                link.hidden = !user || user.role !== 'admin';
+                link.style.display = link.hidden ? 'none' : 'inline-block';
+            });
             if (!authButtonsContainer) return;
 
             if (user) {
                 authButtonsContainer.innerHTML = `
-                    <span style="color: #ffffff; font-weight: 600; font-size: 0.9rem;">Hi, ${user.name}</span>
+                    <span style="color: #ffffff; font-weight: 600; font-size: 0.9rem;">Hi, ${user.name}${user.role === 'admin' ? ' · Admin' : ''}</span>
                     <button id="logoutBtn" type="button" class="btn-solid">Logout</button>
                 `;
                 const logoutBtn = document.getElementById('logoutBtn');
@@ -1350,6 +1307,13 @@ function handleImageFallback(imgElement) {
             return isValid;
         }
 
+        function getLoginDestination() {
+            const requested = new URLSearchParams(window.location.search).get('next');
+            return ['my_bookings.php', 'admin_events.php', 'admin_dashboard.php', 'view_bookings.php'].includes(requested)
+                ? requested
+                : 'my_bookings.php';
+        }
+
         async function handleAuth(event, type) {
             event.preventDefault();
             if (!validateAuthForm(type)) return;
@@ -1376,7 +1340,7 @@ function handleImageFallback(imgElement) {
                 event.target.reset();
                 clearAuthErrors();
                 if (new URLSearchParams(window.location.search).get('login') === '1') {
-                    window.location.href = 'my_bookings.php';
+                    window.location.href = getLoginDestination();
                 }
             } catch (error) {
                 showToast('Could not reach the server. Please try again.');
@@ -1442,7 +1406,7 @@ function handleImageFallback(imgElement) {
                 console.error('Could not load login session:', err);
             }
             if (new URLSearchParams(window.location.search).get('login') === '1') {
-                if (getCurrentUser()) window.location.href = 'my_bookings.php';
+                if (getCurrentUser()) window.location.href = getLoginDestination();
                 else loginModal.style.display = 'flex';
             }
             await fetchDatabaseBookings();
@@ -1486,29 +1450,27 @@ function handleImageFallback(imgElement) {
                     };
                 });
 
-                const dbIds = new Set(databaseBookings.map(booking => booking.dbBookingId));
-                const localOnlyBookings = allBookings.filter(booking => !booking.dbBookingId);
-                const unmatchedLocalDbBookings = allBookings.filter(booking => booking.dbBookingId && !dbIds.has(Number(booking.dbBookingId)));
-                allBookings = [...databaseBookings, ...unmatchedLocalDbBookings, ...localOnlyBookings];
+                allBookings = databaseBookings;
                 saveToStorage(BOOKINGS_STORAGE_KEY, allBookings);
             } catch (err) {
                 console.warn('Could not refresh bookings from MySQL:', err);
             }
         }
 
+        // Keep an open HTML tab in sync with status or booking edits made on the admin page.
+        window.setInterval(async () => {
+            if (document.visibilityState !== 'visible' || !getCurrentUser()) return;
+            await fetchDatabaseBookings();
+            renderBookingsTable();
+            renderDashboard();
+        }, 15000);
+
         window.addEventListener('focus', async () => {
+            if (!getCurrentUser()) return;
             await fetchDatabaseBookings();
             renderBookingsTable();
             renderDashboard();
         });
-
-        // Keep an already-open HTML page in sync with changes made in PHP.
-        window.setInterval(async () => {
-            if (document.visibilityState !== 'visible') return;
-            await fetchDatabaseBookings();
-            renderBookingsTable();
-            renderDashboard();
-        }, 5000);
 
         // Initial Render on Page Load (events loaded from MySQL)
         fetchEvents();

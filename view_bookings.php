@@ -24,6 +24,10 @@ $summary = ['total' => 0, 'confirmed' => 0, 'pending' => 0, 'cancelled' => 0, 'c
 $fetchError = null;
 $search    = isset($_GET['search']) ? trim($_GET['search']) : '';
 $status    = isset($_GET['status']) ? trim($_GET['status']) : '';
+$perPage   = 6;
+$page      = max(1, (int)($_GET['page'] ?? 1));
+$totalBookings = 0;
+$totalPages = 1;
 
 // ---------------------------------------------------------
 // Handle POST actions: cancel or update booking status
@@ -34,6 +38,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     // Preserve the current listing filters when the form submits.
     $search = isset($_POST['search']) ? trim($_POST['search']) : $search;
     $status = isset($_POST['filter_status']) ? trim($_POST['filter_status']) : $status;
+    $page = max(1, (int)($_POST['page'] ?? $page));
 
     try {
         if ($action === 'cancel' && $id > 0) {
@@ -65,7 +70,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     // Redirect back to preserve GET params and avoid form resubmission
-    $query = http_build_query(array_filter(['search' => $search, 'status' => $status, 'msg' => $msg]));
+    $query = http_build_query(array_filter(['search' => $search, 'status' => $status, 'page' => $page, 'msg' => $msg]));
     header('Location: view_bookings.php?' . $query);
     exit;
 }
@@ -104,7 +109,25 @@ try {
         $params[] = $status;
     }
 
-    $sql .= ' ORDER BY b.booked_at DESC';
+    $countSql = 'SELECT COUNT(*) FROM bookings b WHERE LOWER(b.email) = LOWER(?)';
+    $countParams = [$currentUser['email']];
+    if ($search !== '') {
+        $countSql .= ' AND (b.customer_name LIKE ? OR b.email LIKE ?)';
+        $like = '%' . $search . '%';
+        $countParams[] = $like;
+        $countParams[] = $like;
+    }
+    if ($status !== '' && $status !== 'All') {
+        $countSql .= ' AND b.status = ?';
+        $countParams[] = $status;
+    }
+    $countStmt = $pdo->prepare($countSql);
+    $countStmt->execute($countParams);
+    $totalBookings = (int)$countStmt->fetchColumn();
+    $totalPages = max(1, (int)ceil($totalBookings / $perPage));
+    $page = min($page, $totalPages);
+    $offset = ($page - 1) * $perPage;
+    $sql .= ' ORDER BY b.booked_at DESC, b.id DESC LIMIT ' . $perPage . ' OFFSET ' . $offset;
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
@@ -135,6 +158,10 @@ try {
 
 // Display message after redirect
 $msg = isset($_GET['msg']) ? trim($_GET['msg']) : null;
+$pageUrl = function (int $targetPage) use ($search, $status): string {
+    $query = http_build_query(array_filter(['search' => $search, 'status' => $status, 'page' => $targetPage], static fn($value) => $value !== ''));
+    return 'view_bookings.php' . ($query !== '' ? '?' . $query : '');
+};
 ?>
 <!DOCTYPE html>
 <html lang="en">
@@ -189,6 +216,8 @@ $msg = isset($_GET['msg']) ? trim($_GET['msg']) : null;
         .edit-total { margin-top: 1rem; padding: .85rem; border-radius: 6px; background: #eef2ff; color: #312e81; font-weight: 700; display: flex; justify-content: space-between; }
         .edit-modal-actions { display: flex; justify-content: flex-end; gap: .6rem; margin-top: 1.25rem; }
         .edit-modal-actions button { border: 0; cursor: pointer; }
+        .pagination { display:flex; align-items:center; justify-content:center; gap:.75rem; margin:1rem 0 1.5rem; }
+        .pagination .disabled { opacity:.45; pointer-events:none; }
     </style>
 </head>
 <body>
@@ -272,7 +301,7 @@ $msg = isset($_GET['msg']) ? trim($_GET['msg']) : null;
                 <?php endif; ?>
             </div>
         <?php else: ?>
-            <p style="margin-bottom: 1rem;"><strong><?= count($bookings) ?> booking record(s)</strong></p>
+            <p style="margin-bottom: 1rem;"><strong><?= $totalBookings ?> booking record(s) · Page <?= $page ?> of <?= $totalPages ?></strong></p>
             <table>
                 <thead>
                     <tr>
@@ -315,6 +344,7 @@ $msg = isset($_GET['msg']) ? trim($_GET['msg']) : null;
                                         <input type="hidden" name="id" value="<?= (int)$b['id'] ?>">
                                         <input type="hidden" name="search" value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>">
                                         <input type="hidden" name="filter_status" value="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>">
+                                        <input type="hidden" name="page" value="<?= $page ?>">
                                         <button type="submit" class="btn-danger btn-sm">Cancel</button>
                                     </form>
                                 <?php else: ?>
@@ -326,6 +356,11 @@ $msg = isset($_GET['msg']) ? trim($_GET['msg']) : null;
                     <?php endforeach; ?>
                 </tbody>
             </table>
+            <?php if ($totalPages > 1): ?><nav class="pagination" aria-label="Booking records pages">
+                <a class="btn btn-secondary <?= $page <= 1 ? 'disabled' : '' ?>" href="<?= htmlspecialchars($pageUrl(max(1, $page - 1)), ENT_QUOTES, 'UTF-8') ?>" <?= $page <= 1 ? 'aria-disabled="true" tabindex="-1"' : '' ?>>Previous</a>
+                <span>Page <?= $page ?> of <?= $totalPages ?></span>
+                <a class="btn btn-secondary <?= $page >= $totalPages ? 'disabled' : '' ?>" href="<?= htmlspecialchars($pageUrl(min($totalPages, $page + 1)), ENT_QUOTES, 'UTF-8') ?>" <?= $page >= $totalPages ? 'aria-disabled="true" tabindex="-1"' : '' ?>>Next</a>
+            </nav><?php endif; ?>
         <?php endif; ?>
     </div>
 
@@ -337,6 +372,7 @@ $msg = isset($_GET['msg']) ? trim($_GET['msg']) : null;
                 <input type="hidden" name="id" id="editBookingId">
                 <input type="hidden" name="search" value="<?= htmlspecialchars($search, ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="filter_status" value="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>">
+                <input type="hidden" name="page" value="<?= $page ?>">
                 <label for="editCustomerName">Customer name</label>
                 <input id="editCustomerName" name="customer_name" required>
                 <label for="editCustomerEmail">Email</label>
