@@ -1,0 +1,16 @@
+$kind: http-request
+name: Login
+method: POST
+url: '{{base_url}}/api/auth.php'
+order: 3000
+description: Log in with an existing account. On success, a session cookie is set which is required for protected endpoints.
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "action": "login",
+      "email": "john@example.com",
+      "password": "secret123"
+    }

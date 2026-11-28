@@ -246,7 +246,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="form-group">
                 <label for="name">Full Name <span style="color:#dc2626;">*</span></label>
-                <input type="text" id="name" name="name" value="<?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>"
+                <input type="text" id="name" name="name" pattern="[A-Za-z\s]+" title="Use letters and spaces only" value="<?= htmlspecialchars($name, ENT_QUOTES, 'UTF-8') ?>"
                        <?php if (isset($errors['name'])): ?>class="error"<?php endif; ?>>
                 <?php if (isset($errors['name'])): ?>
                     <span class="error-text"><?= $errors['name'] ?></span>

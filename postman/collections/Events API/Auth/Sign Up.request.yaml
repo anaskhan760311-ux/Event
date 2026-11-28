@@ -1,0 +1,17 @@
+$kind: http-request
+name: Sign Up
+method: POST
+url: '{{base_url}}/api/auth.php'
+order: 2000
+description: Register a new user account. Name must contain letters and spaces only. Password must be at least 6 characters.
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "action": "signup",
+      "name": "John Doe",
+      "email": "john@example.com",
+      "password": "secret123"
+    }

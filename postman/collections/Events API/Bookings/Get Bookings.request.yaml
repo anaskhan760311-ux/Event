@@ -1,0 +1,6 @@
+$kind: http-request
+name: Get Bookings
+method: GET
+url: '{{base_url}}/api/get_bookings.php'
+order: 1000
+description: Fetch all bookings for the currently logged-in user, including event details. Requires an active session (login first).

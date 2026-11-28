@@ -1,0 +1,14 @@
+$kind: http-request
+name: Logout
+method: POST
+url: '{{base_url}}/api/auth.php'
+order: 4000
+description: Destroy the current session and log the user out.
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "action": "logout"
+    }

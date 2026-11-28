@@ -1,0 +1,4 @@
+$kind: collection
+name: Bookings
+description: Booking endpoints for logged-in users — fetch, update, and cancel bookings.
+order: 2000

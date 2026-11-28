@@ -1,0 +1,16 @@
+$kind: http-request
+method: POST
+url: "{{base_url}}/api/update_booking.php"
+order: 2000
+description: Update a booking's customer name, ticket quantity, or status. Requires an active session. Email is taken from the session automatically.
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "id": 1,
+      "customer_name": "anas",
+      "ticket_quantity": 2,
+      "status": "Confirmed"
+    }

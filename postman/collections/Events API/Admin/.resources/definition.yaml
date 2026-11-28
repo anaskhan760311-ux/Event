@@ -1,0 +1,4 @@
+$kind: collection
+name: Admin
+description: Admin-only endpoints — dashboard data, booking management, and user role management. Requires an active admin session.
+order: 3000

@@ -1,0 +1,16 @@
+$kind: http-request
+name: Admin Update Role
+method: POST
+url: '{{base_url}}/api/admin_update_role.php'
+order: 3000
+description: Promote or demote a user's role (user/admin). Cannot demote yourself or the last remaining admin. Requires a valid CSRF token from the admin dashboard session.
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "user_id": 1,
+      "role": "admin",
+      "csrf_token": "{{csrf_token}}"
+    }

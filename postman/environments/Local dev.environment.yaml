@@ -1,0 +1,6 @@
+name: Local dev
+values:
+  - key: base_url
+    value: 'http://localhost/Events'
+    type: default
+    enabled: true

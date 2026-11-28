@@ -1,0 +1,16 @@
+$kind: http-request
+name: Admin Update Booking
+method: POST
+url: '{{base_url}}/api/admin_update_booking.php'
+order: 2000
+description: Update a booking's status as an admin. Requires a valid CSRF token from the admin dashboard session.
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "booking_id": 1,
+      "status": "Confirmed",
+      "csrf_token": "{{csrf_token}}"
+    }

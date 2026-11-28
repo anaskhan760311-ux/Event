@@ -1,0 +1,6 @@
+$kind: http-request
+name: Get Session
+method: GET
+url: '{{base_url}}/api/auth.php'
+order: 1000
+description: Check the current session. Returns the logged-in user object or null if not authenticated.

@@ -1,0 +1,5 @@
+$kind: http-request
+name: Search Events
+method: GET
+url: '{{base_url}}/api/search_events.php?name=concert&category=Music&sort=price_asc'
+order: 1500

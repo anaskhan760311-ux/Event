@@ -1,0 +1,15 @@
+$kind: http-request
+name: Get Dashboard Data
+method: GET
+url: '{{base_url}}/api/admin_dashboard_data.php'
+order: 1000
+description: Fetch paginated bookings and summary stats (total events, users, bookings, confirmed). Supports search, status filter, and pagination. Requires an active admin session.
+queryParams:
+  - key: page
+    value: '1'
+  - key: search
+    value: ''
+    disabled: true
+  - key: status
+    value: ''
+    disabled: true

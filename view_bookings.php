@@ -374,7 +374,7 @@ $pageUrl = function (int $targetPage) use ($search, $status): string {
                 <input type="hidden" name="filter_status" value="<?= htmlspecialchars($status, ENT_QUOTES, 'UTF-8') ?>">
                 <input type="hidden" name="page" value="<?= $page ?>">
                 <label for="editCustomerName">Customer name</label>
-                <input id="editCustomerName" name="customer_name" required>
+                <input id="editCustomerName" name="customer_name" pattern="[A-Za-z\s]+" title="Use letters and spaces only" required>
                 <label for="editCustomerEmail">Email</label>
                 <input id="editCustomerEmail" name="email" type="email" required>
                 <label for="editTicketQuantity">Number of tickets</label>

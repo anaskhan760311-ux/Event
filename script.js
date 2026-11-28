@@ -114,14 +114,12 @@ function handleImageFallback(imgElement) {
         const editBookingTicketPrice = document.getElementById('editBookingTicketPrice');
         const editBookingName = document.getElementById('editBookingName');
         const editBookingEmail = document.getElementById('editBookingEmail');
-        const editBookingPhone = document.getElementById('editBookingPhone');
         const editBookingTickets = document.getElementById('editBookingTickets');
         const editBookingStatus = document.getElementById('editBookingStatus');
         const editBookingTotalAmount = document.getElementById('editBookingTotalAmount');
 
         const editBookingNameError = document.getElementById('editBookingNameError');
         const editBookingEmailError = document.getElementById('editBookingEmailError');
-        const editBookingPhoneError = document.getElementById('editBookingPhoneError');
         const editBookingTicketsError = document.getElementById('editBookingTicketsError');
 
         // Confirmation Modal DOM
@@ -528,12 +526,11 @@ function handleImageFallback(imgElement) {
             let isValid = true;
             clearFieldError(nameInput, errEls.name);
             clearFieldError(emailInput, errEls.email);
-            clearFieldError(phoneInput, errEls.phone);
+            if (phoneInput) clearFieldError(phoneInput, errEls.phone);
             clearFieldError(ticketsInput, errEls.tickets);
 
             const nameVal = nameInput.value.trim();
             const emailVal = emailInput.value.trim();
-            const phoneVal = phoneInput.value.trim();
             const ticketsRaw = ticketsInput.value.trim();
             const ticketsVal = Number(ticketsRaw);
 
@@ -554,14 +551,17 @@ function handleImageFallback(imgElement) {
                 isValid = false;
             }
 
-            const normalizedPhone = phoneVal.replace(/[\s\-()]/g, '');
-            const phoneRegex = /^(\+91|0)?[6-9]\d{9}$|^\d{10}$/;
-            if (phoneVal === '') {
-                setFieldError(phoneInput, errEls.phone, 'Phone number is required.');
-                isValid = false;
-            } else if (!phoneRegex.test(normalizedPhone)) {
-                setFieldError(phoneInput, errEls.phone, 'Please enter a valid 10-digit phone number.');
-                isValid = false;
+            if (phoneInput) {
+                const phoneVal = phoneInput.value.trim();
+                const normalizedPhone = phoneVal.replace(/[\s\-()]/g, '');
+                const phoneRegex = /^(\+91|0)?[6-9]\d{9}$|^\d{10}$/;
+                if (phoneVal === '') {
+                    setFieldError(phoneInput, errEls.phone, 'Phone number is required.');
+                    isValid = false;
+                } else if (!phoneRegex.test(normalizedPhone)) {
+                    setFieldError(phoneInput, errEls.phone, 'Please enter a valid 10-digit phone number.');
+                    isValid = false;
+                }
             }
 
             if (ticketsRaw === '' || isNaN(ticketsVal) || !Number.isInteger(ticketsVal) || ticketsVal < 1) {
@@ -684,7 +684,6 @@ function handleImageFallback(imgElement) {
                 'Event Location',
                 'Attendee Name',
                 'Attendee Email',
-                'Attendee Phone',
                 'Unit Price (INR)',
                 'Tickets',
                 'Total Amount (INR)',
@@ -831,13 +830,11 @@ function handleImageFallback(imgElement) {
 
             editBookingName.value = booking.attendeeName;
             editBookingEmail.value = booking.attendeeEmail;
-            editBookingPhone.value = booking.attendeePhone;
             editBookingTickets.value = booking.tickets;
             editBookingStatus.value = booking.status;
 
             clearFieldError(editBookingName, editBookingNameError);
             clearFieldError(editBookingEmail, editBookingEmailError);
-            clearFieldError(editBookingPhone, editBookingPhoneError);
             clearFieldError(editBookingTickets, editBookingTicketsError);
 
             updateEditBookingTotal();
@@ -865,10 +862,9 @@ function handleImageFallback(imgElement) {
             e.preventDefault();
             if (!editingBookingId) return;
 
-            const valid = validateBookingInputs(editBookingName, editBookingEmail, editBookingPhone, editBookingTickets, {
+            const valid = validateBookingInputs(editBookingName, editBookingEmail, null, editBookingTickets, {
                 name: editBookingNameError,
                 email: editBookingEmailError,
-                phone: editBookingPhoneError,
                 tickets: editBookingTicketsError
             });
 
@@ -883,7 +879,6 @@ function handleImageFallback(imgElement) {
                 ...allBookings[idx],
                 attendeeName: editBookingName.value.trim(),
                 attendeeEmail: editBookingEmail.value.trim(),
-                attendeePhone: editBookingPhone.value.trim(),
                 tickets: qty,
                 status: editBookingStatus.value,
                 totalAmount: updatedTotal

@@ -79,8 +79,8 @@ if (!filter_var($email, FILTER_VALIDATE_EMAIL) || strlen($email) > 255 || $passw
 
 if ($action === 'signup') {
     $name = trim((string)($input['name'] ?? ''));
-    if ($name === '' || strlen($name) > 255 || strlen($password) < 6) {
-        authResponse(422, ['success' => false, 'message' => 'Enter your name and a password of at least 6 characters.']);
+    if ($name === '' || strlen($name) > 255 || !preg_match('/^[A-Za-z\s]+$/D', $name) || strlen($password) < 6) {
+        authResponse(422, ['success' => false, 'message' => 'Enter a name using letters and spaces only, and a password of at least 6 characters.']);
     }
     try {
         $stmt = $pdo->prepare('INSERT INTO users (name, email, password_hash) VALUES (?, ?, ?)');

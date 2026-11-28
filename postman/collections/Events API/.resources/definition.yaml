@@ -1,0 +1,3 @@
+$kind: collection
+name: Events API
+description: API collection for the Events application running on WAMP localhost.

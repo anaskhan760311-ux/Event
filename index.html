@@ -291,7 +291,7 @@
                 <input type="hidden" name="event_name" id="bookingEventNameHidden" value="">
                 <div class="form-group">
                     <label for="bookingName">Full Name</label>
-                    <input type="text" id="bookingName" placeholder="Enter your full name">
+                    <input type="text" id="bookingName" pattern="[A-Za-z\s]+" title="Use letters and spaces only" placeholder="Enter your full name">
                     <span id="bookingNameError" class="error-text"></span>
                 </div>
 
@@ -342,7 +342,7 @@
             <form id="editBookingForm" novalidate>
                 <div class="form-group">
                     <label for="editBookingName">Full Name</label>
-                    <input type="text" id="editBookingName" placeholder="Enter full name">
+                    <input type="text" id="editBookingName" pattern="[A-Za-z\s]+" title="Use letters and spaces only" placeholder="Enter full name">
                     <span id="editBookingNameError" class="error-text"></span>
                 </div>
 
@@ -350,12 +350,6 @@
                     <label for="editBookingEmail">Email Address</label>
                     <input type="email" id="editBookingEmail" placeholder="Enter email address">
                     <span id="editBookingEmailError" class="error-text"></span>
-                </div>
-
-                <div class="form-group">
-                    <label for="editBookingPhone">Phone Number</label>
-                    <input type="tel" id="editBookingPhone" placeholder="e.g., 9876543210">
-                    <span id="editBookingPhoneError" class="error-text"></span>
                 </div>
 
                 <div class="form-group">
@@ -422,7 +416,7 @@
             <form id="signupForm" onsubmit="handleAuth(event, 'Sign Up')">
                 <div class="form-group">
                     <label for="signupName">Full Name</label>
-                    <input type="text" id="signupName" required placeholder="Enter your full name">
+                    <input type="text" id="signupName" pattern="[A-Za-z\s]+" title="Use letters and spaces only" required placeholder="Enter your full name">
                 </div>
                 <div class="form-group">
                     <label for="signupEmail">Email Address</label>
@@ -476,6 +470,6 @@
         </div>
     </footer>
 
-    <script src="script.js?v=booking-status-sync-3"></script>
+    <script src="script.js?v=booking-edit-form-no-phone-1"></script>
 </body>
 </html>

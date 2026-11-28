@@ -1,0 +1,14 @@
+$kind: http-request
+name: Cancel Booking
+method: POST
+url: '{{base_url}}/api/cancel_booking.php'
+order: 3000
+description: Cancel a booking by its ID. Requires an active session. The booking must belong to the logged-in user.
+headers:
+  Content-Type: application/json
+body:
+  type: json
+  content: |-
+    {
+      "id": 1
+    }
